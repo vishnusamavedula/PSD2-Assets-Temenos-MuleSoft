@@ -1,0 +1,14 @@
+#%RAML 1.0 SecurityScheme
+type: OAuth 2.0
+
+describedBy: 
+  headers:
+    authorization:
+  queryParameters:
+   token:
+
+settings: 
+  authorizationUri:
+  accessTokenUri: 
+  authorizationGrants: [authorization_code]
+  scopes: 

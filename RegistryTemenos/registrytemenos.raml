@@ -1,0 +1,27 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/5a6b29b3-30f5-4ecf-ae34-ee61142f706f/ # 
+title: RegistryTemenos
+
+description: This spec needs further revision. Pending data structure information from Temenos Product team - Kiran Sashi
+
+securitySchemes:
+  oauth2.0: !include securityScheme.raml
+
+securedBy:
+  [oauth2.0]
+
+
+/validateTransaction:
+  get:
+    headers:
+    queryParameters:
+      country:
+  
+    responses:
+      200:
+        body:
+          application/json:
+            
+      400:
+  /{format}:
+    get:
