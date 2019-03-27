@@ -1,0 +1,31 @@
+#%RAML 1.0
+title: AccountOverviewTemenosAPI
+
+securitySchemes:
+  oauth2.0: !include securityScheme.raml
+
+securedBy:
+  [oauth2.0]
+
+types:
+  account: !include dataType_accountOverview.raml
+
+/accountOverview:
+  get:
+    description: Input will be account number of IBAN and the account information will be returned
+    headers:
+    queryParameters:
+      accountNumber:
+      IBAN:
+
+    responses:
+      200:
+        body:
+          application/json:
+            type: account
+            examples: !include example_accountOverview.raml              
+      400:
+        body:
+          application/json:
+            example:
+              message: "Incorrect account number"
