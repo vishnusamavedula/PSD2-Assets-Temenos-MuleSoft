@@ -1,0 +1,17 @@
+#%RAML 1.0 SecurityScheme
+type: OAuth 2.0
+
+description: You can add the auth URL, secure Header & query parameters
+
+describedBy:
+  headers:
+    Authorization:
+  queryParameters:
+    Token:
+
+settings:
+  authorizationUri:
+  accessTokenUri:
+  authorizationGrants:
+    [ authorization_code ]
+  scopes:

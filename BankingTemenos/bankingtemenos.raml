@@ -1,0 +1,71 @@
+#%RAML 1.0
+title: BankingTemenos
+
+securitySchemes:
+  oauth2.0: !include securityScheme.raml
+
+securedBy: [oauth2.0]
+
+/accountBalanceCurrent:
+  description: Retrieves balances for the accounts authorized by the Customer.
+  displayName: Retrieve accounts balance for current
+  get:
+    queryParameters:
+      accountID:
+        example: '123456789'
+    headers:
+      accept:
+        example: application/json
+      ChannelID:
+        example: INTERNET
+    responses:
+      200:
+        body:
+          application/json:
+            
+      400:     
+
+  /{companyId}:
+    description: Retrieves balances for the accounts by companyID
+    displayName: Retrieve balance by companyID
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              
+        400: 
+
+/info:
+  description: Retrieves information about the accounts authorized by the Customer.
+  displayName: Retrieve all accounts information
+  get:
+    headers:
+    queryParameters:
+
+    responses:
+      200:
+        body:
+          application/json: 
+
+/accountBalanceSaving:
+  description: Retrieves balances for the accounts authorized by the Customer.
+  displayName: Retrieve accounts balance for savings
+  get:
+    queryParameters:
+      accountID:
+        example: '123456789'
+    headers:
+      accept:
+        example: application/json
+      ChannelID:
+        example: INTERNET
+    responses:
+      200:
+        body:
+          application/json:
+            
+      400:
+
+
+     
