@@ -1,0 +1,31 @@
+# Name used to describe the policy in API Platform
+name: Second factor authentication policy using third party identity management and external Notifications API
+
+# A more detailed description of the policy
+description: Generates, sends and validate security codes for adding second factor authentication to specific endpoints. 
+
+category: Security
+standalone: true
+
+providedCharacteristics: [Second factor authentication]
+requiredCharacteristics: []
+requiresConnectivity: true
+
+configuration:  
+
+  - propertyName: identityManagerUrl
+    name: Identity Manager URL
+    description: URL of the REST API that manages identities.
+    type: string
+    optional: false
+    
+  - propertyName: notificationsApiUrl
+    name: Notifications API URL
+    description: URL of the REST API that sends code notifications.
+    type: string
+    
+  - propertyName: securedEndpoints
+    name: Secured Endpoint
+    description: Path of the endpoints secured by the policy. Supports regex.
+    type: string
+    

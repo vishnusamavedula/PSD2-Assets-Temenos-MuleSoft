@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy xmlns="http://www.mulesoft.org/schema/mule/policy"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:spring="http://www.springframework.org/schema/beans"
+        xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+        xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+        xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+        xmlns:ss="http://www.springframework.org/schema/security"
+        xmlns:http="http://www.mulesoft.org/schema/mule/http"
+        xmlns:json="http://www.mulesoft.org/schema/mule/json"
+        xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+        xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw"
+        online="false"
+        policyName="Second factor authentication policy using third party identity management and external Notifications API"
+        version="1.0"
+        xsi:schemaLocation="http://www.mulesoft.org/schema/mule/policy http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd
+              http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+              http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+              http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-current.xsd
+              http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+              http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+              http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+              http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+              http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+	<!-- The following provides a custom trait to the RAML of the API if it uses APIkit. Otherwise it is ignored. -->
+    <raml-security-scheme id="basic"><![CDATA[
+        description: Resource access is protected using second-factor authentication.
+        type: x-custom
+        describedBy:
+			body:
+			  application/x-www-form-urlencoded:
+			    formParameters:
+			      username:
+			        description: Username for first step authentication.
+			        type: string
+
+			      password:
+			        description: Password for first step authentication.
+			        type: string
+
+			      security_code:
+			        description: Second factor verification code.
+			        type: string
+        		
+            responses:
+                200:
+                    description: |
+                        Second factor verification code sent.
+                401:
+                    description: |
+                        Invalid username and password.
+    ]]></raml-security-scheme>
+
+	<!-- Global configuration -->
+
+	<http:request-config name="Identity_service_HTTP" protocol="HTTPS" host="{{ identityManagerUrl }}" port="443" basePath="/"  />
+	<http:request-config name="Notifications_API_HTTP" protocol="HTTPS" host="{{ notificationsApiUrl }}" port="443" basePath="/api"  />
+	
+	<spring:beans>
+		<spring:bean class="java.util.concurrent.locks.ReentrantLock" id="lock"/>
+		<spring:bean id="SecurityCodesStore" name="Bean" class="org.mule.util.store.ManagedObjectStore">
+			<spring:property name="storeName" value="SecurityCodesStore"/>
+			<spring:property name="maxEntries" value="-1"/>
+		</spring:bean>
+	</spring:beans>
+
+    <!--
+        A pointcut controls the scope of a policy application. You can use
+        different types of conditions to determine if the policy must be
+        applied.
+
+        api-platform-gw:api-pointcut: Applies the policy to a particular API.
+        apiName/apiVersion values are compared against the auto-discovery
+        global element defined in your Mule project.
+        See: https://docs.mulesoft.com/api-manager/api-auto-discovery
+
+        For other kinds of pointcut conditions see: 
+        https://docs.mulesoft.com/api-manager/applying-custom-policies
+    -->
+    <pointcut>
+		<!-- 	See https://docs.mulesoft.com/api-manager/custom-policy-reference for more info -->
+        <api-platform-gw:api-pointcut apiName="{{ apiName }}" apiVersion="{{ apiVersionName }}"/>
+        <!-- TODO: Enable filter by endpoints  -->
+        <!-- <resource uriTemplateRegex="{{ securedEndpoints }}" /> -->
+        <!-- <endpoint regex="http://localhost:${http.port}/gateway/.*" /> -->
+    </pointcut>
+
+
+    <!-- 
+        The before tag executes before your API flows. In this tag you can
+        filter or manipulate the incoming message.
+    -->
+    <before>
+        <mule:message-filter onUnaccepted="badCredentials">
+            <mule:expression-filter expression="#[payload != null &amp;&amp; payload.username != null &amp;&amp; payload.password != null]" />
+        </mule:message-filter>
+
+    	<!-- Validate username and password with external service. -->
+		<mule:set-variable value="#[payload.username]" variableName="username"/>
+		<mule:set-variable value="#[payload.password]" variableName="password"/>
+		<mule:set-variable value="#[(payload.security_code != null) ? payload.security_code : 'not_present' ]" variableName="security_code"/>
+        <mule:set-payload value="#['username=' + username + '&amp;password=' + password]"/>
+        <http:request config-ref="Identity_service_HTTP" path="/authorize" method="POST">
+        	<http:request-builder>
+        		<http:header value="application/x-www-form-urlencoded" headerName="Content-type"/>
+        	</http:request-builder>
+        	<http:success-status-code-validator values="200,401"/>
+        </http:request>
+        <json:json-to-object-transformer />
+        <mule:message-filter onUnaccepted="badCredentials">
+            <mule:expression-filter expression="#[message.inboundProperties['http.status'] != 401]" />
+        </mule:message-filter>        
+		
+		<!-- Gets phone number from External ID Service -->
+		<mule:set-variable value="#[payload.getAsString(&quot;phone&quot;)]" variableName="phone"/>
+
+    	<!-- Validate if the request contains second factor security code -->
+        <mule:message-filter onUnaccepted="noSecurityCode">
+            <mule:expression-filter expression="#[!security_code.equals('not_present')]" />
+        </mule:message-filter>
+        
+        <!-- Access ObjectStore and retrieve security code using username as key -->
+		<mule:set-variable value="#[app.registry['SecurityCodesStore'].retrieve( flowVars.username )]" variableName="stored_security_code"/>
+
+        <!-- Validate second factor code -->
+		<mule:message-filter onUnaccepted="badSecurityCode">
+			<mule:expression-filter expression="#[security_code.equals(flowVars.stored_security_code)]" />
+		</mule:message-filter>
+    	
+    </before>
+
+    <!--
+        The after is inserted after your API flows. With this tag you can
+        manipulate the API response.
+
+        Note that if the API flow is halted (ie. by a filter) the after
+        tag will not run. In this example, the after tag is not executed
+        when the message is filtered.
+    -->
+    <after>
+        <mule:set-property propertyName="x-second-factor-enabled" value="true" />
+    </after>
+
+    <!-- Second factor code generation -->
+
+    <mule:processor-chain name="noSecurityCode">
+    	<!-- Generate security code  -->
+    	<mule:set-variable value="#[java.util.UUID.randomUUID().toString().substring(0,6)]" variableName="security_code"/>
+    	
+    	<!-- Store security code on object store using username as key -->
+    	<mule:set-variable value="#[username]" variableName="security_code_key"/>
+		<mule:expression-component><![CDATA[
+			app.registry['lock'].lock();
+			if (!app.registry['SecurityCodesStore'].contains(security_code_key))
+				app.registry['SecurityCodesStore'].store(security_code_key, security_code);
+			app.registry['lock'].unlock();
+		]]>
+		</mule:expression-component>
+
+        <!-- Send security code  -->
+        <mule:set-payload value="#['{ &quot;message&quot; : &quot;Security code is: ' + flowVars.security_code + '&quot;, &quot;phone&quot;: ' + flowVars.phone + '}']"/>
+        <http:request config-ref="Notifications_API_HTTP" path="/notifications" method="POST"/>    	
+        <mule:message-filter onUnaccepted="errorSendingCode">
+            <mule:expression-filter expression="#[message.inboundProperties['http.status'] == 200]" />
+        </mule:message-filter>
+        <mule:logger message="The custom policy filtered the message #[message.getId()] enforcing second factor auth." level="DEBUG" />        
+        <mule:set-property propertyName="http.status" value="200"/>
+        <mule:set-property propertyName="Content-Type" value="application/json"/>
+        <mule:set-payload value='{ "message" : "Security code sent." }'/>
+    </mule:processor-chain>
+
+    <!-- Error Handling -->
+
+    <mule:processor-chain name="badCredentials">
+        <mule:logger message="The custom policy filtered the message #[message.getId()] enforcing second factor auth." level="DEBUG" />
+        <mule:set-property propertyName="http.status" value="401"/>
+        <mule:set-property propertyName="Content-Type" value="application/json"/>
+        <mule:set-payload value='{ "error" : "Bad credentials." }'/>
+    </mule:processor-chain>
+
+    <mule:processor-chain name="badSecurityCode">
+        <mule:logger message="The custom policy filtered the message #[message.getId()] enforcing second factor auth." level="DEBUG" />
+        <mule:set-property propertyName="http.status" value="401"/>
+        <mule:set-property propertyName="Content-Type" value="application/json"/>
+        <mule:set-payload value='{ "error" : "Bad second factor code." }'/>
+    </mule:processor-chain>
+
+    <mule:processor-chain name="errorSendingCode">
+        <mule:logger message="The custom policy filtered the message #[message.getId()] enforcing second factor auth." level="DEBUG" />
+        <mule:set-property propertyName="http.status" value="500"/>
+        <mule:set-property propertyName="Content-Type" value="application/json"/>
+        <mule:set-payload value='{ "error" : "Error sending second factor code." }'/>
+    </mule:processor-chain>
+
+</policy>
