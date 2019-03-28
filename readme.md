@@ -12,8 +12,9 @@ git push -u origin master
 git remote add origin https://github.com/vishnusamavedula/PSD2-Assets-Temenos-MuleSoft.git
 git push -u origin master
 
-Reference:
-The 2fac template has been re-used from Banking Catalyst in Anypoint Exchnage
+Reference Assets:
+	# The 2fac template has been re-used from Banking Catalyst in Anypoint Exchnage
+	# The authorization api template has been re-used from Banking Catalyst in Anypoint Exchange
 
 
 About this repo:
