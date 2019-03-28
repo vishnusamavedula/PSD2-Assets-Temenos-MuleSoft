@@ -11,8 +11,6 @@ securedBy: [oauth2.0]
   displayName: Retrieve accounts balance for current
   get:
     queryParameters:
-      accountID:
-        example: '123456789'
     headers:
       accept:
         example: application/json
@@ -34,15 +32,29 @@ securedBy: [oauth2.0]
           body:
             application/json:
               
-        400: 
+        400:
+    /balances:
+      displayName: Account Balance by Company Id
+      get:
 
-/info:
-  description: Retrieves information about the accounts authorized by the Customer.
-  displayName: Retrieve all accounts information
+  /{accountID}:
+    description: Account details by Account ID
+    displayName: Account details by Account ID
+    get:
+    post:
+
+    /balances:
+      description: Account balance
+      displayName: Account balance by Account ID
+      get:
+
+
+/transactionHistory:
+  description: Retrieves transaction history
+  displayName: Retrieves transaction history
   get:
     headers:
     queryParameters:
-
     responses:
       200:
         body:
