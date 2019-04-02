@@ -1,0 +1,60 @@
+#%RAML 1.0
+title: CustomerTemenosAPI
+
+securitySchemes:
+  oauth2.0: !include securityScheme.raml
+
+securedBy: [oauth2.0]
+
+/contact:
+  
+  get:
+    queryParameters:
+      id:
+    
+    responses:   
+      200:
+      400:
+  put:
+    queryParameters:
+      id:
+    responses:   
+      200:
+        body:
+          application/json:
+            example:
+              {"message": "contact updated"}
+      400:
+  
+  post:
+    queryParameters:
+      id:
+    responses:   
+      200:
+      400:
+  
+  delete:
+    queryParameters:
+      id:
+    responses:   
+      200:
+       body:
+        application/json:
+          example:
+            {"message": "contact deleted"}
+      400:
+
+  
+  /{lastName}:
+    get:
+      responses:
+        200:
+        400:
+
+  /{id}:
+    get:
+      responses:
+        200:
+        400:
+
+    
