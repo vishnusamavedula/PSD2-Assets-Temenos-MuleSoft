@@ -1,0 +1,47 @@
+#%RAML 1.0 Library
+usage:
+
+types:
+  
+  Access:
+    type: object
+    properties:
+      Accounts:
+        type: object
+        properties:
+          iban: string
+          bban: string
+          pan: string
+          maskedPan: string
+          msisdn: string
+          currency: string
+      Balances:
+        type: object
+        properties:
+          iban: string
+          bban: string
+          pan: string
+          maskedPan: string
+          msisdn: string
+          currency: string
+      Transaction: 
+        type: object
+        properties: 
+          iban: string
+          bban: string
+          pan: string
+          maskedPan: string
+          msisdn: string
+          currency: string
+      avalaiableAccounts:
+        type: string
+      allPSD2:
+        type: string
+  recurringIndicator:
+    type: boolean
+  validUntil:
+    type: datetime
+  frequencyPerDay: 
+    type: integer
+  combinedServiceIndicator: 
+    type: boolean

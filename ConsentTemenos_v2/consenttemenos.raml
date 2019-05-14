@@ -1,0 +1,85 @@
+#%RAML 1.0
+title: ConsentTemenos
+
+securitySchemes:
+  oauth2.0: !include security/securityScheme.raml
+
+securedBy: [oauth2.0]
+
+uses:
+  addConsent: library/library_Consent.raml
+
+/consentPopulate:
+  description: Get consent information
+  get:
+    headers:
+      Location:
+    queryParameters:
+
+    responses:
+      200:
+        body:
+          application/json:
+            
+      400:
+        body:
+          application/json:
+ 
+  post:
+    description: Store Consent Information
+    headers:
+    queryParameters:
+
+    responses:
+      200:
+      400:   
+  
+  /{permissionID}:
+    get:
+      headers:
+      queryParameters:
+        AccountIDs:
+        SessionID:
+        
+    post:
+      headers:
+      queryParameters:
+
+
+/addConsent:
+  description: Add consent
+  post:
+    body:
+      application/json:
+        type: !include dataType/dataTypeConsentAdd.raml
+
+/updateConsentStatus:
+  description: Updating Consent Request
+  post:
+    
+
+/updateConsentRecord:
+  description: Updating Consent Record
+  post:
+
+/getConsentRequest:
+  description:  Get Consent Request Information
+  get:
+
+/deleteConsent:
+  description: Delete Consent Record
+  delete:
+
+/revokeConsent:
+  description: Revoking Consent
+  post:
+
+/getConsentStatus:
+  description: Get the current Consent status
+  get:
+
+
+
+
+
+
